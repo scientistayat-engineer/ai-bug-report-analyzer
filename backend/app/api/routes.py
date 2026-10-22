@@ -24,13 +24,13 @@ SAMPLES = [
 ]
 
 
-def _to_report(state: dict) -> BugReport:
+def _to_report(state: dict, fallback_used: bool = False) -> BugReport:
     return BugReport(
         title=state["title"], affected_feature=state["affected_feature"], summary=state["summary"],
         severity=state["severity"], severity_reason=state["severity_reason"],
         root_causes=state["root_causes"], steps_to_reproduce=state["steps_to_reproduce"],
         suggested_next_steps=state["suggested_next_steps"], report_markdown=state["final_report"],
-        engine=llm.engine_name(), generated_at=datetime.now(timezone.utc).isoformat(),
+        engine=llm.engine_name() + (" - Gemini call failed, fallback used" if fallback_used else ""), generated_at=datetime.now(timezone.utc).isoformat(),
     )
 
 
@@ -47,11 +47,12 @@ def samples():
 @router.post("/analyze", response_model=BugReport)
 def analyze(req: AnalyzeRequest):
     """Run the full workflow and return the structured report."""
+    before = llm.fallback_count
     try:
         state = build_graph().invoke({"bug_description": req.description.strip()})
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Workflow failed: {exc}") from exc
-    return _to_report(state)
+    return _to_report(state, llm.fallback_count > before)
 
 
 @router.post("/analyze/stream")
@@ -59,13 +60,14 @@ def analyze_stream(req: AnalyzeRequest):
     """Server-Sent Events: emits one event per finished node, then the final report."""
     def events():
         state = {"bug_description": req.description.strip()}
+        before = llm.fallback_count
         try:
             yield f"data: {json.dumps({'type': 'start', 'nodes': NODE_ORDER})}\n\n"
             for update in build_graph().stream(state, stream_mode="updates"):
                 for node, data in update.items():
                     state.update(data)
                     yield f"data: {json.dumps({'type': 'node', 'node': node, 'data': {k: v for k, v in data.items() if k != 'final_report'}})}\n\n"
-            report = _to_report(state)
+            report = _to_report(state, llm.fallback_count > before)
             yield f"data: {json.dumps({'type': 'done', 'report': report.model_dump()})}\n\n"
         except Exception as exc:
             yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"

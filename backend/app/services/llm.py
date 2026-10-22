@@ -13,6 +13,7 @@ log = logging.getLogger("bug-analyzer.llm")
 T = TypeVar("T", bound=BaseModel)
 
 _model = None
+fallback_count = 0  # incremented whenever a Gemini call fails and the demo engine is used
 
 
 def engine_name() -> str:
@@ -39,6 +40,8 @@ def _ask(schema: Type[T], prompt: str, fallback: Callable[[], T]) -> T:
         structured = _get_model().with_structured_output(schema)
         return structured.invoke(prompt)
     except Exception as exc:  # network, quota, parsing ...
+        global fallback_count
+        fallback_count += 1
         log.warning("Gemini call failed (%s); using fallback engine.", exc)
         return fallback()
 
