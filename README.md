@@ -2,6 +2,8 @@
 
 # 🐞 BugLens - AI Bug Report Analyzer
 
+   🌐 **Live demo:** https://buglens-ayat.web.app  |  **API docs:** https://ai-bug-report-analyzer.vercel.app/docs
+
 **Turn a plain-English bug description into a structured, developer-ready bug report.**
 Powered by **LangGraph** · **Google Gemini** · **FastAPI**
 
