@@ -15,3 +15,7 @@ app.include_router(router)
 
 if settings.frontend_dir.exists():
     app.mount("/", StaticFiles(directory=settings.frontend_dir, html=True), name="frontend")
+else:
+    @app.get("/")
+    def root():
+        return {"service": "AI Bug Report Analyzer API", "docs": "/docs", "health": "/api/health"}
