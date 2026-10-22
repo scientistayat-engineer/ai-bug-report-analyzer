@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BugLens - AI Bug Report Analyzer</title>
+<meta name="description" content="Turn a plain-English bug description into a structured, developer-ready bug report using LangGraph and Gemini.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐞</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="nav">
+  <div class="wrap nav-in">
+    <a href="#top" class="brand"><span class="logo">B</span>BugLens</a>
+    <nav class="links">
+      <a href="#analyzer">Analyzer</a><a href="#workflow">Workflow</a><a href="#features">Features</a><a href="#history">History</a>
+    </nav>
+    <span class="engine" id="engineBadge"><i></i><span>connecting...</span></span>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-in">
+    <p class="eyebrow">LangGraph &middot; Gemini &middot; FastAPI</p>
+    <h1>From messy bug description to a <em>developer-ready</em> report in seconds.</h1>
+    <p class="lead">Describe the problem in plain English. A four-node AI workflow extracts the facts, rates the severity, proposes root causes and formats a clean report you can paste straight into your tracker.</p>
+    <div class="cta"><a class="btn primary" href="#analyzer">Analyze a bug</a><a class="btn ghost" href="#workflow">See how it works</a></div>
+    <ul class="stats">
+      <li><b>4</b><span>LangGraph nodes</span></li><li><b>4</b><span>severity levels</span></li><li><b>Live</b><span>step-by-step progress</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="analyzer" class="section">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Workspace</p><h2>Bug Analyzer</h2></div>
+    <div class="grid">
+      <div class="panel input-panel">
+        <label for="bugInput" class="label">Bug description</label>
+        <textarea id="bugInput" rows="9" maxlength="4000" placeholder="e.g. Users cannot log in after the latest update. The login button spins forever and the console shows a 401 error..."></textarea>
+        <div class="chips" id="samples"></div><div class="count" id="count">0 / 4000</div>
+        <div class="row">
+          <button class="btn primary" id="analyzeBtn"><span class="btn-t">Analyze bug</span><span class="spin"></span></button>
+          <button class="btn ghost" id="clearBtn" type="button">Clear</button>
+        </div>
+        <p class="error" id="error" hidden></p>
+
+        <div class="pipeline" id="pipeline">
+          <h3>Workflow progress</h3>
+          <ol>
+            <li data-node="bug_analysis"><span class="dot">1</span><div><b>Bug Analysis</b><small>Title, feature, summary</small></div><em>Waiting</em></li>
+            <li data-node="severity_detection"><span class="dot">2</span><div><b>Severity Detection</b><small>Critical / High / Medium / Low</small></div><em>Waiting</em></li>
+            <li data-node="root_cause"><span class="dot">3</span><div><b>Root Cause Suggestion</b><small>Possible technical causes</small></div><em>Waiting</em></li>
+            <li data-node="format_report"><span class="dot">4</span><div><b>Format Report</b><small>Clean structured report</small></div><em>Waiting</em></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="panel result-panel" id="resultPanel">
+        <div class="empty" id="empty">
+          <div class="empty-ic">🐞</div>
+          <h3>Your report will appear here</h3>
+          <p>Paste a bug description or pick a sample, then press <b>Analyze bug</b>.</p>
+        </div>
+        <div class="result" id="result" hidden>
+          <div class="res-top">
+            <div><span class="sev" id="sevBadge">-</span><h3 id="rTitle"></h3><p class="meta" id="rMeta"></p></div>
+            <div class="actions">
+              <button class="btn small ghost" id="copyBtn">Copy</button>
+              <button class="btn small ghost" id="mdBtn">.md</button>
+              <button class="btn small ghost" id="jsonBtn">.json</button>
+            </div>
+          </div>
+          <div class="tabs"><button class="tab active" data-tab="report">Report</button><button class="tab" data-tab="markdown">Markdown</button><button class="tab" data-tab="json">JSON</button></div>
+          <div class="tab-body" id="tab-report">
+            <div class="cards">
+              <div class="card"><h4>Affected feature</h4><p id="rFeature"></p></div>
+              <div class="card"><h4>Severity reason</h4><p id="rReason"></p></div>
+            </div>
+            <div class="card wide"><h4>Summary</h4><p id="rSummary"></p></div>
+            <div class="card wide"><h4>Possible root causes</h4><ol id="rCauses"></ol></div>
+            <div class="cards">
+              <div class="card"><h4>Steps to reproduce</h4><ol id="rSteps"></ol></div>
+              <div class="card"><h4>Recommended next steps</h4><ul id="rNext"></ul></div>
+            </div>
+          </div>
+          <pre class="tab-body code" id="tab-markdown" hidden></pre>
+          <pre class="tab-body code" id="tab-json" hidden></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="workflow" class="section alt">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Architecture</p><h2>The LangGraph workflow</h2></div>
+    <div class="flow">
+      <div class="fnode io"><small>Input</small><b>Bug description</b></div><span class="arrow">&rarr;</span>
+      <div class="fnode"><small>Node 1</small><b>Bug Analysis</b><p>Extracts title, affected feature and issue summary.</p></div><span class="arrow">&rarr;</span>
+      <div class="fnode"><small>Node 2</small><b>Severity Detection</b><p>Classifies as Critical, High, Medium or Low.</p></div><span class="arrow">&rarr;</span>
+      <div class="fnode"><small>Node 3</small><b>Root Cause</b><p>Suggests the most likely technical causes.</p></div><span class="arrow">&rarr;</span>
+      <div class="fnode"><small>Node 4</small><b>Format Report</b><p>Builds the final readable bug report.</p></div><span class="arrow">&rarr;</span>
+      <div class="fnode io end"><small>END</small><b>Structured report</b></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="section">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Features</p><h2>Built for real QA workflows</h2></div>
+    <div class="feat">
+      <article><span>⚡</span><h3>Live progress</h3><p>Server-sent events show each LangGraph node finishing in real time.</p></article>
+      <article><span>🎯</span><h3>Severity triage</h3><p>Colour-coded severity with a clear justification for every rating.</p></article>
+      <article><span>🧠</span><h3>Root cause ideas</h3><p>Ranked, concise technical hypotheses to speed up debugging.</p></article>
+      <article><span>📄</span><h3>Export anywhere</h3><p>Copy the report or download it as Markdown or JSON for Jira / GitHub.</p></article>
+      <article><span>🕘</span><h3>Local history</h3><p>Your last analyses are stored in your browser and can be reopened.</p></article>
+      <article><span>🛡️</span><h3>Graceful fallback</h3><p>If Gemini is unreachable the app falls back to an offline engine.</p></article>
+    </div>
+  </div>
+</section>
+
+<section id="history" class="section alt">
+  <div class="wrap">
+    <div class="sec-head row between"><div><p class="eyebrow">Recent</p><h2>Analysis history</h2></div><button class="btn small ghost" id="clearHistory">Clear history</button></div>
+    <div class="hist" id="histList"></div>
+  </div>
+</section>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <b>BugLens</b> &middot; AI Bug Report Analyzer &middot; Built by Anushay Ayat &middot; SMIT &middot; AI &amp; Data Science, Batch 12
+</div></footer>
+<div class="toast" id="toast"></div>
+<script src="js/config.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
